@@ -1,16 +1,3 @@
-# please make this into a function
-
-#' [description of your function]
-#'
-#' @field [input parameter]
-#' @field [input parameter]
-#' @field [input parameter ... etc]
-#'
-#' @export [function name, I think you need this so that when you build the package, this function will be visible to the user using this package]
-#' @examples
-
-
-
 ################################
 # Load package
 library(pointblank)
@@ -35,24 +22,37 @@ rules$precondition_filter_variable <- rules$precondition_filter_variable %>% rep
 date_format <- ""
 
 check_date_format <- function(column) {
-
-  date_parts <- strsplit(column, " ")[[1]]
-
-  # Check if the first part contains four digits (for year) and the second part contains a time
-  if (length(date_parts) > 1 && grepl("^\\d{2}/\\d{2}/\\d{4}$", date_parts[1])) {
-    date_format = "%d/%m/%Y %H:%M"
-  } else if (length(date_parts) == 1 && grepl("^\\d{4}$", date_parts[1])) {
-    # Check if the first part contains four digits (for year)
-    date_format = "%Y-%m-%d"
-  } else if (length(date_parts) > 1 && grepl("^\\d{2}-\\d{2}-\\d{4}$", date_parts[1])) {
-    # Check if the second part (after splitting by whitespace) has the format "dd-mm-yyyy hh:mm"
-    date_format = "%d-%m-%Y %H:%M"
-  } else {
-    return("Unknown")
+  # Check if the date is in "yyyy-mm-dd" format
+  if (grepl("^\\d{4}-\\d{2}-\\d{2}$", column)) {
+    return("%Y-%m-%d")
   }
+
+  # Check if the date is in "dd/mm/yyyy hh:mm" format
+  if (grepl("^\\d{2}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+    return("%d/%m/%Y %H:%M")
+  }
+
+  # Check if the date is in "dd-mm-yyyy hh:mm" format
+  if (grepl("^\\d{1}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+    return("%d/%m/%Y %H:%M")
+  }
+
+  # Check if the date is in "y-m-d" format
+  if (grepl("^\\d{1}/\\d{1}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+    return("%d/%m/%Y %H:%M")
+  }
+
+  # Check if the date is in "y-m-d" format
+  if (grepl("^\\d{2}/\\d{1}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+    return("%d/%m/%Y %H:%M")
+  }
+
+  # If none of the formats match, return "Unknown"
+  return("Unknown")
 }
 
-check_date_format(registry_data$diagnosis_date)
+
+
 
 variables_to_check <- unique(c(rules$variable1, rules$variable2)[which(c(rules$variable1, rules$variable2) != "")])
 #
@@ -62,7 +62,8 @@ log4r_info_start(Sys.time(), data_file)
 if(all(variables_to_check %in% colnames(registry_data))) {
   log4r_info_variables_verified()
   # Data prepare
-
+  date_column <- grep("date", names(registry_data), value = TRUE)[1]
+  date_format <- check_date_format(registry_data[[date_column]][1])
   # Processes date-related columns in the registry_data table, converts their values to the desired format, and stores the transformed data in a YAML file
   tbl_store(
     registry_data ~ registry_data %>%
