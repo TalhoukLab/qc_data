@@ -1,24 +1,47 @@
-# My logs
-my_logfile = paste0(getwd(), "/log/logs.txt")
+#' Initialize logging configuration
+#'
+#' Initializes logging configuration with log file setup and logging functions
+#'
+#' @param log_file The name of the log file to use
+#'
+#' @return list of logging functions
+#' @export
+#'
+#' @examples
+logs <- function(log_file = "logs.txt") {
 
-my_console_appender = console_appender(layout = default_log_layout())
-my_file_appender = file_appender(my_logfile, append = TRUE, layout = default_log_layout())
+  # Initialize log file path
+  log_path <- file.path(getwd(), "log", log_file)
 
-my_logger <- logger(threshold = "INFO", appenders = list(my_console_appender, my_file_appender))
+  # Initialize append-ers
+  my_console_appender <- console_appender(layout = default_log_layout())
+  my_file_appender <- file_appender(log_path, append = TRUE, layout = default_log_layout())
 
-# Log functions
-log4r_info_start <- function(now, data_file) {
-  log4r::info(my_logger, paste("QC Registry data file:", data_file, "on", now))
-}
+  # Create logger
+  my_logger <- logger(threshold = "INFO", appenders = list(my_console_appender, my_file_appender))
 
-log4r_info_complete <- function(now, yml) {
-  log4r::info(my_logger, paste("Registry data QC is done. Results are saved to", yml, "at", now))
-}
+  # Log functions
+  log_info_start <- function(now, data_file) {
+    log4r::info(my_logger, paste("QC Registry data file:", data_file, "on", now))
+  }
 
-log4r_info_variables_verified <- function() {
-  log4r::info(my_logger, paste("All variables checked by QC are included in the Registry data file."))
-}
+  log_info_complete <- function(now, yml) {
+    log4r::info(my_logger, paste("Registry data QC is done. Results are saved to", yml, "at", now))
+  }
 
-log4r_info_variables_not_found <- function(variables) {
- log4r::info(my_logger, paste("Variables:", variables, "are not included in the Registry data file."))
+  log_info_variables_verified <- function() {
+    log4r::info(my_logger, "All variables checked by QC are included in the Registry data file.")
+  }
+
+  log_info_variables_not_found <- function(variables) {
+    log4r::info(my_logger, paste("Variables:", variables, "are not included in the Registry data file."))
+  }
+
+  # Return list of logging functions
+  list(
+    log_info_start = log_info_start,
+    log_info_complete = log_info_complete,
+    log_info_variables_verified = log_info_variables_verified,
+    log_info_variables_not_found = log_info_variables_not_found
+  )
 }
