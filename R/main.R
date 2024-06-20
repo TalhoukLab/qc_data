@@ -7,8 +7,8 @@ library(log4r)
 library(tidyr)
 
 # Source script
-source(paste0(getwd(), "/config.R"))
-source(paste0(getwd(), "/logs.R"))
+source("../qc_data/R/config.R")
+source("../qc_data/R/logs.R")
 
 # Read in data file
 registry_data <- read.csv(data, check.names = FALSE, stringsAsFactors = FALSE)
