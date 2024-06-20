@@ -1,6 +1,6 @@
 #' Main QC check file
 #'
-#' @param data_file
+#' @param data_file takes in data set
 #' @param rules_file_path takes in the rules file
 #'
 #' @return agent
