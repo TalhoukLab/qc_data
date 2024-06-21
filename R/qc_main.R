@@ -11,7 +11,7 @@ qc_main <- function(data_file, rules_file_path) {
 
   # Source necessary scripts
   source("../qc_data/R/config.R")
-  source("../qc_data/R/logs.R")
+  source("../qc_data/logs.R")
 
   # Setup paths and constants
   paths_and_values <- setup_paths(data_file)
