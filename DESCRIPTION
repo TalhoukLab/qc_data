@@ -4,12 +4,12 @@ Title: Framework to QC data in tabular format
 Version: 4.0.0
 Date: 2022-10-17
 Authors@R: c(
-    person("Samuel", "Leung", , "Samuel.Leung@vch.ca", role = c("aut", "cre")),
-    person("Kashish", "Joshipura", , "khj2003@student.ubc.ca", role = "aut")
+    person("Samuel", "Leung","", "Samuel.Leung@vch.ca", role = c("aut", "cre")),
+    person("Kashish", "Joshipura","", "khj2003@student.ubc.ca", role = "aut")
   )
 Description: Framework to QC data in tabular format.  This package was initially built to QC data from registry.
 License: MIT + file LICENSE
-URL: hhttps://github.com/TalhoukLab/qc_data
+URL: https://github.com/TalhoukLab/qc_data
 BugReports: https://github.com/TalhoukLab/qc_data/issues
 Depends: 
     R (>= 4.2)

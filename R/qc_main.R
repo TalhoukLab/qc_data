@@ -8,13 +8,6 @@
 #'
 #' @examples
 qc_main <- function(data_file, rules_file_path) {
-  # Load package dependencies
-  library(pointblank)
-  library(dplyr)
-  library(stringr)
-  library(log4r)
-  library(tidyr)
-  library(readxl)  # For reading Excel files
 
   # Source necessary scripts
   source("../qc_data/R/config.R")
