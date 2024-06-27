@@ -1,20 +1,71 @@
-#' Main QC check file
+#' Quality Control Process
 #'
-#' @param data_file takes in data set
-#' @param rules_file_path takes in the rules file
+#' @param data_file Name of the data file to be validated
+#' @param rules_file_path Path to the rules Excel file
+#' @param yml_path Directory path where YAML and HTML reports will be saved
+#' @param log_file Path to the log file where logs will be stored
 #'
-#' @return agent
+#' @return agent Object containing the results and configuration of the validation process
 #' @export
 #'
-#' @examples
-qc_main <- function(data_file, rules_file_path) {
+qc_main <- function(data_file, rules_file_path, yml_path, log_file) {
 
-  # Source necessary scripts
-  source("../qc_data/R/config.R")
-  source("../qc_data/logs.R")
+  # Load necessary libraries
+  library(readxl)
+  library(dplyr)
+  library(tidyr)
+  library(yaml)
+  library(log4r)
+  library(tbl2yaml)  # Assuming this is used for converting data to YAML (not fully detailed in original code)
+
+  # Configure paths and constants
+  config <- function(data_file) {
+    ALIVE <- "A"
+    DECEASED <- "D"
+    EMPTY <- c("", " ", "  ", NULL)
+    yml_path <- file.path(yml_path, "yml")
+    data_path <- file.path(getwd(), "data")
+    data <- file.path(data_path, data_file)
+    rule_path <- file.path(getwd(), "rules")
+
+    list(
+      ALIVE = ALIVE,
+      DECEASED = DECEASED,
+      EMPTY = EMPTY,
+      yml_path = yml_path,
+      data_path = data_path,
+      data_file = data_file,
+      data = data,
+      rule_path = rule_path
+    )
+  }
+
+  # Logging functions
+  my_logfile <- log_file
+  my_console_appender <- console_appender(layout = default_log_layout())
+  my_file_appender <- file_appender(my_logfile, append = TRUE, layout = default_log_layout())
+  my_logger <- logger(threshold = "INFO", appenders = list(my_console_appender, my_file_appender))
+
+  log4r_info_start <- function(now, data_file) {
+    log4r::info(my_logger, paste("QC Registry data file:", data_file, "on", now))
+  }
+
+  log4r_info_complete <- function(now, yml) {
+    log4r::info(my_logger, paste("Registry data QC is done. Results are saved to", yml, "at", now))
+  }
+
+  log4r_info_variables_verified <- function() {
+    log4r::info(my_logger, "All variables checked by QC are included in the Registry data file.")
+  }
+
+  log4r_info_variables_not_found <- function(variables) {
+    log4r::info(my_logger, paste("Variables:", variables, "are not included in the Registry data file."))
+  }
+
+  # Main QC process
 
   # Setup paths and constants
-  paths_and_values <- setup_paths(data_file)
+  paths_and_values <- config(data_file)
   ALIVE <- paths_and_values$ALIVE
   DECEASED <- paths_and_values$DECEASED
   EMPTY <- paths_and_values$EMPTY
@@ -41,19 +92,12 @@ qc_main <- function(data_file, rules_file_path) {
 
     # Determine date format function
     check_date_format <- function(column) {
-      # Check if the date is in "yyyy-mm-dd" format
       if (grepl("^\\d{4}-\\d{2}-\\d{2}$", column)) {
         return("%Y-%m-%d")
       }
-
-      # Check if the date is in "dd/mm/yyyy hh:mm" format
       if (grepl("^\\d{2}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
         return("%d/%m/%Y %H:%M")
       }
-
-      # Add more date formats as needed...
-
-      # If none of the formats match, return "Unknown"
       return("Unknown")
     }
 

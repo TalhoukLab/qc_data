@@ -1,5 +1,5 @@
 Type: Package
-Package: qc_data
+Package: QcData
 Title: Framework to QC data in tabular format
 Version: 4.0.0
 Date: 2022-10-17
