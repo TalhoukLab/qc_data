@@ -4,7 +4,12 @@
 \alias{qc_main}
 \title{Quality Control Process}
 \usage{
-qc_main(data_file, rules_file_path, yml_path, log_file)
+qc_main(
+  data_file,
+  rules_file_path,
+  yml_path = "../qc_data/output_folder",
+  log_file
+)
 }
 \arguments{
 \item{data_file}{Name of the data file to be validated}
