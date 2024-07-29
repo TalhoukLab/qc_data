@@ -1,91 +1,124 @@
-################################
-# Load package
-library(pointblank)
-library(dplyr)
-library(stringr)
-library(log4r)
-library(tidyr)
+#' Quality Control Process
+#'
+#' @param data_file Name of the data file to be validated
+#' @param rules_file_path Path to the rules Excel file
+#' @param yml_path Directory path where YAML and HTML reports will be saved
+#' @param log_file Path to the log file where logs will be stored
+#'
+#' @return agent Object containing the results and configuration of the validation process
+#' @export
+#'
 
-# Source script
-source(paste0(getwd(), "/config.R"))
-source(paste0(getwd(), "/logs.R"))
+qc_main <- function(registry_data, rules, yml_path = "../qc_data/output_folder", log_file) {
 
-# Read in data file
-registry_data <- read.csv(data, check.names = FALSE, stringsAsFactors = FALSE)
+  ################################
+  # Load package
+  library(pointblank)
+  library(dplyr)
+  library(stringr)
+  library(log4r)
+  library(tidyr)
+  library(sqldf)
 
-# Read in rule list
-options(scipen = 999)
-rules <- read.csv(paste0(rule_path, "rules_Q2024.csv"), check.names = FALSE, stringsAsFactors = FALSE) %>% mutate_if(is.logical, as.character)
-rules$pre_condition_filter <- rules$pre_condition_filter %>% replace_na("")
-rules$precondition_filter_variable <- rules$precondition_filter_variable %>% replace_na("")
+  my_logfile <- file.path(getwd(), "log", log_file)
+  my_console_appender <- console_appender(layout = default_log_layout())
+  my_file_appender <- file_appender(my_logfile, append = TRUE, layout = default_log_layout())
+  my_logger <- logger(threshold = "INFO", appenders = list(my_console_appender, my_file_appender))
 
-date_format <- ""
-
-check_date_format <- function(column) {
-  # Check if the date is in "yyyy-mm-dd" format
-  if (grepl("^\\d{4}-\\d{2}-\\d{2}$", column)) {
-    return("%Y-%m-%d")
+  # Log functions
+  log4r_info_start <- function(now, data_file) {
+    log4r::info(my_logger, paste("QC Registry data file:", data_file, "on", now))
   }
 
-  # Check if the date is in "dd/mm/yyyy hh:mm" format
-  if (grepl("^\\d{2}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
-    return("%d/%m/%Y %H:%M")
+  log4r_info_complete <- function(now, yml) {
+    log4r::info(my_logger, paste("Registry data QC is done. Results are saved to", yml, "at", now))
   }
 
-  # Check if the date is in "dd-mm-yyyy hh:mm" format
-  if (grepl("^\\d{1}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
-    return("%d/%m/%Y %H:%M")
+  log4r_info_variables_verified <- function() {
+    log4r::info(my_logger, paste("All variables checked by QC are included in the Registry data file."))
   }
 
-  # Check if the date is in "y-m-d" format
-  if (grepl("^\\d{1}/\\d{1}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
-    return("%d/%m/%Y %H:%M")
+  log4r_info_variables_not_found <- function(variables) {
+    log4r::info(my_logger, paste("Variables:", variables, "are not included in the Registry data file."))
   }
 
-  # Check if the date is in "y-m-d" format
-  if (grepl("^\\d{2}/\\d{1}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
-    return("%d/%m/%Y %H:%M")
+  # Read in data file
+  # registry_data <- read.csv(data, check.names = FALSE, stringsAsFactors = FALSE)
+
+  # Read in rule list
+  options(scipen = 999)
+  # rules <- read.csv(paste0(rule_path, "rules_Q2024.csv"), check.names = FALSE, stringsAsFactors = FALSE) %>% mutate_if(is.logical, as.character)
+  rules$pre_condition_filter <- ifelse(is.na(rules$pre_condition_filter), "", rules$pre_condition_filter)
+  rules$precondition_filter_variable <- ifelse(is.na(rules$precondition_filter_variable), "", rules$precondition_filter_variable)
+
+  check_date_format <- function(column) {
+    # Check if the date is in "yyyy-mm-dd" format
+    if (grepl("^\\d{4}-\\d{2}-\\d{2}$", column)) {
+      return("%Y-%m-%d")
+    }
+
+    # Check if the date is in "dd/mm/yyyy hh:mm" format
+    if (grepl("^\\d{2}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+      return("%d/%m/%Y %H:%M")
+    }
+
+    # Check if the date is in "dd-mm-yyyy hh:mm" format
+    if (grepl("^\\d{1}/\\d{2}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+      return("%d/%m/%Y %H:%M")
+    }
+
+    # Check if the date is in "y-m-d" format
+    if (grepl("^\\d{1}/\\d{1}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+      return("%d/%m/%Y %H:%M")
+    }
+
+    # Check if the date is in "y-m-d" format
+    if (grepl("^\\d{2}/\\d{1}/\\d{4} \\d{1,2}:\\d{2}(:\\d{2})?$", column)) {
+      return("%d/%m/%Y %H:%M")
+    }
+
+    # If none of the formats match, return "Unknown"
+    return("Unknown")
   }
 
-  # If none of the formats match, return "Unknown"
-  return("Unknown")
-}
 
+  variables_to_check <- unique(c(rules$variable1, rules$variable2)[which(c(rules$variable1, rules$variable2) != "")])
+  #
+  # Log when starts .........
+  log4r_info_start(Sys.time(), registry_data)
+  # Check if variables from the rule lists are contained in the data file
+  if(all(variables_to_check %in% colnames(registry_data))) {
+    log4r_info_variables_verified()
+    # Data prepare
+    date_column <- grep("date", names(registry_data), value = TRUE)[1]
+    date_format <- check_date_format(registry_data[[date_column]][1])
+    # custom_as_date <- function(x){
+    #   as.Date(x,format=date_format)
+    # }
+    # Processes date-related columns in the registry_data table, converts their values to the desired format, and stores the transformed data in a YAML file
 
+    tbl_store(
+      rlang::inject(
+      registry_data ~ registry_data %>%
+        mutate(across(
+          matches("date"),
+          ~ as.Date(., format = !!date_format)
+        ))
+      %>%
+        mutate(across(
+          matches("last_attended_appt"),
+          ~ as.Date(., format = !!date_format)
+        )))
+      ,
+      .init = ~ library(tidyverse)
+    ) %>%
+      yaml_write(filename = "QCRegistry.yml", path = yml_path)
 
-
-variables_to_check <- unique(c(rules$variable1, rules$variable2)[which(c(rules$variable1, rules$variable2) != "")])
-#
-# Log when starts .........
-log4r_info_start(Sys.time(), data_file)
-# Check if variables from the rule lists are contained in the data file
-if(all(variables_to_check %in% colnames(registry_data))) {
-  log4r_info_variables_verified()
-  # Data prepare
-  date_column <- grep("date", names(registry_data), value = TRUE)[1]
-  date_format <- check_date_format(registry_data[[date_column]][1])
-  # Processes date-related columns in the registry_data table, converts their values to the desired format, and stores the transformed data in a YAML file
-  tbl_store(
-    registry_data ~ registry_data %>%
-      mutate(across(
-        matches("date"),
-        ~ as.Date(., format = date_format)
-      ))
-    %>%
-      mutate(across(
-        matches("last_attended_appt"),
-        ~ as.Date(., format = date_format)
-      ))
-    ,
-    .init = ~ library(tidyverse)
-  ) %>%
-    yaml_write(filename = "QCRegistry.yml", path = yml_path)
-
-  agent <- create_agent(
-          tbl = ~ tbl_source("registry_data", file.path(yml_path, "QCRegistry.yml")),
-          tbl_name = "registry_data",
-          label = "Registry data validation",
-        )
+    agent <- create_agent(
+      tbl = rlang::inject(~ tbl_source("registry_data", file.path(!!yml_path, "QCRegistry.yml"))),
+      tbl_name = "registry_data",
+      label = "Registry data validation",
+    )
 
     # Iterate over each row in the 'rules' data frame
     for (i in 1:nrow(rules)) {
@@ -187,8 +220,8 @@ if(all(variables_to_check %in% colnames(registry_data))) {
               actions = action_levels(warn_at = rules$warning[i], stop_at = rules$stop[i]),
               label = rules$rule_description[i]
             )
-            }
-         else {
+        }
+        else {
           agent <- agent %>%
             col_vals_lt(
               columns = rules$variable1[i],
@@ -232,21 +265,36 @@ if(all(variables_to_check %in% colnames(registry_data))) {
     }
 
 
-  agent <- agent%>%interrogate()
+    agent <- agent%>%interrogate()
 
-  all_passed(agent)
-  report <- get_agent_report(agent)
+    all_passed(agent)
+    report <- get_agent_report(agent)
 
-  yaml_write(agent, path = yml_path)
-  yaml_agent_string(filename = "agent-registry_data.yml", path = yml_path)
-  export_report(agent,
-                filename = affix_datetime("validation_report.html"),
-                path = yml_path)
+    yaml_write(agent, path = yml_path)
+    yaml_agent_string(filename = "agent-registry_data.yml", path = yml_path)
+    export_report(agent,
+                  filename = affix_datetime("validation_report.html"),
+                  path = yml_path)
 
-  # Log when completes .......
-  log4r_info_complete(Sys.time(), yml_path)
+    # Log when completes .......
+    log4r_info_complete(Sys.time(), yml_path)
 
-} else{
-  log4r_info_variables_not_found(unique(variables_to_check[which(!variables_to_check%in%colnames(registry_data))]))
-  stop()
+  } else{
+    log4r_info_variables_not_found(unique(variables_to_check[which(!variables_to_check%in%colnames(registry_data))]))
+    stop()
+  }
+
+  # get_data_extracts(agent, i = NULL)
+
+  remove_failed <- function(data,rule) {
+    to_remove <- get_data_extracts(agent, rule)
+    removed_df <- sqldf("SELECT * FROM data WHERE study_id NOT IN (SELECT study_id FROM to_remove)")
+    removed_df
+  }
+
 }
+
+
+
+
+
