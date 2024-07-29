@@ -4,21 +4,16 @@
 \alias{qc_main}
 \title{Quality Control Process}
 \usage{
-qc_main(
-  data_file,
-  rules_file_path,
-  yml_path = "../qc_data/output_folder",
-  log_file
-)
+qc_main(registry_data, rules, yml_path = "../qc_data/output_folder", log_file)
 }
 \arguments{
-\item{data_file}{Name of the data file to be validated}
-
-\item{rules_file_path}{Path to the rules Excel file}
-
 \item{yml_path}{Directory path where YAML and HTML reports will be saved}
 
 \item{log_file}{Path to the log file where logs will be stored}
+
+\item{data_file}{Name of the data file to be validated}
+
+\item{rules_file_path}{Path to the rules Excel file}
 }
 \value{
 agent Object containing the results and configuration of the validation process

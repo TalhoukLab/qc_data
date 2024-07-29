@@ -1,0 +1,67 @@
+type: agent
+tbl: ~tbl_source("registry_data", file.path("../qc_data/output_folder", "QCRegistry.yml"))
+tbl_name: registry_data
+label: Registry data validation
+lang: en
+locale: en
+steps:
+- col_vals_not_null:
+    columns: rules$variable1[i]
+    actions:
+      warn_fraction: 0.3
+      stop_fraction: 0.5
+    label: 'diagnosis_date: No Missing Values'
+- col_vals_lt:
+    columns: rules$variable1[i]
+    value: '2024-07-29'
+    preconditions: ~. %>% tidyr::drop_na(diagnosis_date)
+    actions:
+      warn_fraction: 0.01
+      stop_fraction: 0.05
+    label: diagnosis_date Is Not a Future Date
+- col_vals_not_null:
+    columns: rules$variable1[i]
+    actions:
+      warn_fraction: 0.5
+      stop_fraction: 0.8
+    label: 'site_admit_date: No Missing Values'
+- col_vals_lt:
+    columns: rules$variable1[i]
+    value: '2024-07-29'
+    preconditions: ~. %>% tidyr::drop_na(site_admit_date)
+    actions:
+      warn_fraction: 0.01
+      stop_fraction: 0.05
+    label: 'site_admit_date: Is Not a Future Date'
+- col_vals_gt:
+    columns: rules$variable1[i]
+    value: vars(birth_date)
+    preconditions: ~. %>% tidyr::drop_na(death_date, birth_date)
+    actions:
+      warn_fraction: 5.0e-05
+      stop_fraction: 0.0001
+    label: death_date is after birth_date
+- col_vals_gt:
+    columns: rules$variable1[i]
+    value: vars(diagnosis_date)
+    preconditions: ~. %>% tidyr::drop_na(death_date, diagnosis_date)
+    actions:
+      warn_fraction: 0.01
+      stop_fraction: 0.05
+    label: death_date is after diagnosis_date
+- col_vals_regex:
+    columns: rules$variable1[i]
+    regex: '[a-zA-Z0-9]+'
+    preconditions: ~. %>% dplyr::filter(grepl("[a-zA-Z0-9]+", death_cause_orig_desc))
+    actions:
+      warn_fraction: 0.05
+      stop_fraction: 0.1
+    label: Records With death_cause_orig_desc Also Includes death_cause_original
+- col_vals_regex:
+    columns: rules$variable1[i]
+    regex: '[a-zA-Z0-9]+'
+    preconditions: ~. %>% dplyr::filter(grepl("[a-zA-Z0-9]+", death_cause_orig))
+    actions:
+      warn_fraction: 0.5
+      stop_fraction: 0.8
+    label: Records With death_cause_original Also Includes death_cause_orig_desc
