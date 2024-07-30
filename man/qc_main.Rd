@@ -4,7 +4,7 @@
 \alias{qc_main}
 \title{Quality Control Process}
 \usage{
-qc_main(registry_data, rules, yml_path = "../qc_data/output_folder", log_file)
+qc_main(registry_data, rules, yml_path = getwd(), log_file)
 }
 \arguments{
 \item{yml_path}{Directory path where YAML and HTML reports will be saved}

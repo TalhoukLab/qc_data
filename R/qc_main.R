@@ -9,7 +9,7 @@
 #' @export
 #'
 
-qc_main <- function(registry_data, rules, yml_path = "../qc_data/output_folder", log_file) {
+qc_main <- function(registry_data, rules, yml_path = getwd(), log_file) {
 
   ################################
   # Load package
@@ -92,9 +92,6 @@ qc_main <- function(registry_data, rules, yml_path = "../qc_data/output_folder",
     # Data prepare
     date_column <- grep("date", names(registry_data), value = TRUE)[1]
     date_format <- check_date_format(registry_data[[date_column]][1])
-    # custom_as_date <- function(x){
-    #   as.Date(x,format=date_format)
-    # }
     # Processes date-related columns in the registry_data table, converts their values to the desired format, and stores the transformed data in a YAML file
 
     tbl_store(

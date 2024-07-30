@@ -1,6 +1,0 @@
-type: tbl_store
-tbls:
-  registry_data: ~ registry_data %>% mutate(across(matches("date"), ~as.Date(., format
-    = "%Y-%m-%d"))) %>% mutate(across(matches("last_attended_appt"), ~as.Date(., format
-    = "%Y-%m-%d")))
-init: ~library(tidyverse)
