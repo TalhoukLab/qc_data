@@ -276,18 +276,16 @@ qc_main <- function(registry_data, rules, yml_path = getwd(), log_file) {
     # Log when completes .......
     log4r_info_complete(Sys.time(), yml_path)
 
+    return(agent)
+
   } else{
     log4r_info_variables_not_found(unique(variables_to_check[which(!variables_to_check%in%colnames(registry_data))]))
     stop()
   }
 
-  # get_data_extracts(agent, i = NULL)
 
-  remove_failed <- function(data,rule) {
-    to_remove <- get_data_extracts(agent, rule)
-    removed_df <- sqldf("SELECT * FROM data WHERE study_id NOT IN (SELECT study_id FROM to_remove)")
-    removed_df
-  }
+
+  return()
 
 }
 
