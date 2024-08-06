@@ -9,7 +9,7 @@
 #' @export
 #'
 
-qc_main <- function(registry_data, rules, yml_path = getwd(), log_file) {
+qc_main <- function(registry_data, rules, yml_path = getwd(), log_file = "log/logs.txt") {
 
   ################################
   # Load package
@@ -20,7 +20,7 @@ qc_main <- function(registry_data, rules, yml_path = getwd(), log_file) {
   library(tidyr)
   library(sqldf)
 
-  my_logfile <- file.path(getwd(), "log", log_file)
+  my_logfile <- file.path(getwd(),log_file)
   my_console_appender <- console_appender(layout = default_log_layout())
   my_file_appender <- file_appender(my_logfile, append = TRUE, layout = default_log_layout())
   my_logger <- logger(threshold = "INFO", appenders = list(my_console_appender, my_file_appender))
